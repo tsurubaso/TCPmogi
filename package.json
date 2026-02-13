@@ -1,0 +1,15 @@
+{
+  "name": "tcpmogi",
+  "version": "1.0.0",
+  "description": "Training to better understand TCP",
+  "keywords": [
+    "TCP"
+  ],
+  "license": "ISC",
+  "author": "tsurubaso",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}

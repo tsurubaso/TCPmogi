@@ -1,21 +1,24 @@
-# TCP Message Framing (Length‑Prefix + Buffer + while)
 
-Ce mini‑README explique **pourquoi JSON casse en TCP** et comment construire un protocole robuste.
+# TCP Message Framing (Length-Prefix + Buffer + while)
 
----
-
-## 🎯 Problème : TCP n’envoie pas des “messages”
-
-TCP transporte un **flux continu d’octets**.
-
-Donc :
-
-- 1 message peut arriver en plusieurs morceaux
-- plusieurs messages peuvent arriver collés dans un seul chunk
+This mini-README explains **why JSON breaks over TCP** and how to build a robust messaging protocol.
 
 ---
 
-## ❌ Exemple dangereux
+## 🎯 Problem: TCP does not send “messages”
+
+TCP transports a **continuous stream of bytes**.
+
+That means:
+
+- A single message can arrive in multiple chunks  
+- Multiple messages can arrive glued together in one chunk  
+
+TCP has no built-in message boundaries.
+
+---
+
+## ❌ Dangerous Example
 
 ```js
 socket.on("data", (data) => {
@@ -23,23 +26,25 @@ socket.on("data", (data) => {
 });
 ```
 
-Cela casse si `data` contient un JSON incomplet.
+This will break if `data` contains an incomplete JSON fragment.
 
 ---
 
-## ✅ Solution : Length‑Prefix Protocol
+## ✅ Solution: Length-Prefix Protocol
 
-Chaque message est encodé comme :
+Each message is encoded like this:
 
 ```
-[4 bytes longueur][payload JSON]
+[4 bytes length][JSON payload]
 ```
+
+So the receiver always knows how many bytes belong to the full message.
 
 ---
 
-## 🧠 Principe : Bufferisation
+## 🧠 Principle: Buffering
 
-On accumule tout ce qui arrive :
+We accumulate all incoming chunks into a buffer:
 
 ```js
 let buffer = Buffer.alloc(0);
@@ -51,7 +56,7 @@ socket.on("data", (chunk) => {
 
 ---
 
-## 🔁 Extraction avec while (le cœur)
+## 🔁 Extracting Messages with while (the core idea)
 
 ```js
 while (buffer.length >= 4) {
@@ -66,13 +71,13 @@ while (buffer.length >= 4) {
 
   const msg = JSON.parse(msgBody.toString());
 
-  console.log("✅ Message reçu :", msg);
+  console.log("✅ Message received:", msg);
 }
 ```
 
 ---
 
-## 🚀 Exemple complet
+## 🚀 Full Example
 
 ### server.js
 
@@ -101,6 +106,8 @@ net.createServer((socket) => {
 }).listen(5000);
 ```
 
+---
+
 ### client.js
 
 ```js
@@ -124,28 +131,29 @@ const client = net.createConnection({ port: 5000 }, () => {
 
 ---
 
-## ✅ Résultat
+## ✅ Result
 
-Le serveur reçoit correctement :
+The server correctly receives:
 
-- plusieurs messages
-- même si TCP les colle ou les découpe
+* multiple messages
+* even if TCP splits them or merges them together
 
 ---
 
-## 🌍 Pourquoi c’est important
+## 🌍 Why It Matters
 
-Cette technique est utilisée dans :
+This technique is widely used in:
 
-- Blockchain P2P nodes
-- Jeux multijoueur
-- Protocoles réseau custom
-- Synchronisation distribuée
+* Blockchain P2P nodes
+* Multiplayer games
+* Custom network protocols
+* Distributed synchronization systems
 
 ---
 
 ## 📌 Conclusion
 
-- TCP = stream
-- JSON peut être coupé
-- buffer + length-prefix + while = robustesse
+* TCP = byte stream
+* JSON can be split across packets
+* buffer + length-prefix + while = robust messaging
+
